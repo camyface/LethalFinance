@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  postgres-db:
+    container_name: lethal_finance
+    image: postgres:16
+    restart: always
+    env_file:
+      - .env
+    ports:
+       - 5435:5432
+
+    volumes:
+       - lethal_finance_data:/var/lib/postgresql/data
+
+volumes:
+  lethal_finance_data:
+    driver: local
+
