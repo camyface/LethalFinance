@@ -8,6 +8,7 @@ import DashboardPage from "./pages/DashboardPage.jsx";
 import BudgetsPage from "./pages/BudgetsPage.jsx";
 import GoalsPage from "./pages/GoalsPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 const App = () => {

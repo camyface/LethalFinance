@@ -4,6 +4,7 @@ package com.example.backend.entity;
 import jakarta.persistence.*;
 
 @Entity
+@Table()
 public class Profile {
     @Id
     @GeneratedValue
@@ -11,7 +12,7 @@ public class Profile {
 
     @OneToOne
     @JoinColumn(name = "userid")
-    private User user;
+    private Users users;
     @Column
     private String branchOrAgency;
     @Column
@@ -45,16 +46,16 @@ public class Profile {
 
     }
 
-    public User getUser() {
-        return user;
+    public Users getUser() {
+        return users;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setUser(Users users) {
+        this.users = users;
     }
 
-    public Profile(User user, String branchOrAgency, String component, String grade, int yearsOfService, int currentAge, int targetRetirementAge, int annualIncome, int monthlyTspContribution, int monthlyOtherContribution, String maritalStatus, int countOfDependents, String location, String createdAt, String updatedAt) {
-        this.user = user;
+    public Profile(Users users, String branchOrAgency, String component, String grade, int yearsOfService, int currentAge, int targetRetirementAge, int annualIncome, int monthlyTspContribution, int monthlyOtherContribution, String maritalStatus, int countOfDependents, String location, String createdAt, String updatedAt) {
+        this.users = users;
         this.branchOrAgency = branchOrAgency;
         this.component = component;
         this.grade = grade;

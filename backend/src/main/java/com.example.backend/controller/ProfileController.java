@@ -12,6 +12,7 @@ public class ProfileController {
 
     public ProfileController(ProfileService profileService) {
         this.profileService = profileService;
+        System.out.println("UserCOntroller loaded");
     }
 
     @PostMapping

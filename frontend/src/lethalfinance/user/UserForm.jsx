@@ -2,19 +2,25 @@ import {object, string} from "yup";
 import {yupResolver} from "@hookform/resolvers/yup";
 import {useForm} from "react-hook-form";
 import {Button, Col, Container, Form, Row} from "react-bootstrap";
+import {saveUser} from "../../services/UserService.js";
 
-const LoginPage = () => {
+const UserForm = () => {
 
     const userSchema = object( {
-        firstName: string(),
+        firstName: string()
+            .required("Required"),
 
-        lastName: string(),
+        lastName: string()
+            .required("Required"),
 
-        email: string(),
+        email: string()
+            .required("Required"),
 
-        password: string(),
+        password: string()
+            .required("Required"),
 
-        role: string(),
+        role: string()
+            .default("USER"),
 
         createdAt: string(),
 
@@ -34,7 +40,9 @@ const LoginPage = () => {
         }
     });
 
-    const onSubmit = (data) => {
+    const onSubmit = async (user) => {
+        await saveUser(user);
+        reset();
 
     }
 
@@ -44,10 +52,38 @@ const LoginPage = () => {
                 <Row className="justify-content-center">
                     <Col md={10} lg={8}>
                         <div className="reservation-card p-4 rounded-4 shadow-sm">
-                            <h1 className="mb-4 text-center">Login</h1>
+                            <h1 className="mb-4 text-center">Register</h1>
 
                             <Form onSubmit={handleSubmit(onSubmit)}>
                                 <Row className="g-3">
+                                    <Col md={12}>
+                                        <Form.Group controlId="full_name">
+                                            <Form.Label>First Name</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                {...register("firstName")}
+                                                isInvalid={!!errors.firstName}
+                                            />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errors.firstName?.message}
+                                            </Form.Control.Feedback>
+                                        </Form.Group>
+                                    </Col>
+
+                                    <Col md={12}>
+                                        <Form.Group controlId="full_name">
+                                            <Form.Label>Last Name</Form.Label>
+                                            <Form.Control
+                                                type="text"
+                                                {...register("lastName")}
+                                                isInvalid={!!errors.lastName}
+                                            />
+                                            <Form.Control.Feedback type="invalid">
+                                                {errors.lastName?.message}
+                                            </Form.Control.Feedback>
+                                        </Form.Group>
+                                    </Col>
+
                                     <Col md={12}>
                                         <Form.Group controlId="email">
                                             <Form.Label>Email</Form.Label>
@@ -80,6 +116,13 @@ const LoginPage = () => {
                                         <Button type="submit" className="menu-button">
                                             Submit
                                         </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline-secondary"
+                                            onClick={() => reset()}
+                                        >
+                                            Reset
+                                        </Button>
                                     </Col>
                                 </Row>
                             </Form>
@@ -93,4 +136,4 @@ const LoginPage = () => {
     )
 }
 
-export default LoginPage;
+export default UserForm;

@@ -4,9 +4,9 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5435/lethalFinance
+    driver-class-name: org.postgresql.Driver
     username: user
     password: pass
-    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:

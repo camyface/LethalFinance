@@ -1,9 +1,10 @@
 package com.example.backend.service;
 
 
-import com.example.backend.entity.User;
+import com.example.backend.entity.Users;
 import com.example.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
+
 
 @Service
 public class UserService {
@@ -13,11 +14,11 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public User saveUser(User user) {
-        return userRepository.save(user);
+    public Users saveUser(Users users) {
+        return userRepository.save(users);
     }
 
-    public User findUserById(Long id) {
+    public Users findUserById(Long id) {
         return userRepository.findById(id).orElseThrow();
     }
 

@@ -1,13 +1,13 @@
 package com.example.backend.controller;
 
 
-import com.example.backend.entity.User;
+import com.example.backend.entity.Users;
 import com.example.backend.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/v1/user")
+@RequestMapping("/api/v1/users")
 public class UserController {
 
     private final UserService userService;
@@ -16,11 +16,18 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("/test")
+    public String test() {
+        return "User controller works";
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public User saveNewUser(@RequestBody User user) {
-        return userService.saveUser(user);
+    public Users saveNewUser(@RequestBody Users users) {
+        return userService.saveUser(users);
     }
+
+
 
 
 
