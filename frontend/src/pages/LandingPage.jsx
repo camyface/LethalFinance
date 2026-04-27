@@ -8,6 +8,8 @@ const LandingPage = () => {
             <Link as={Link} to={"/login"}>Login</Link>
             <br/>
             <Link as={Link} to={"/register"}>Register</Link>
+            <br/>
+            <Link as={Link} to={"/profile"}>Profile</Link>
         </>
 
     )

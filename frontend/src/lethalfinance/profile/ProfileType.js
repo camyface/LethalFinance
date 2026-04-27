@@ -1,0 +1,16 @@
+export const profile = {
+    id: 1,
+    userid: 1,
+    branchOrAgency: "",
+    component: "",
+    grade: "",
+    yearsOfService: 1.0,
+    currentAge: 1.0,
+    targetRetirementAge: 20.0,
+    annualIncome: 10000.00,
+    monthlyTspContributions: 5000.00,
+    monthlyOtherContributions: 3000.00,
+    maritalStatus: "",
+    countOfDependents: 3,
+    location: "",
+}

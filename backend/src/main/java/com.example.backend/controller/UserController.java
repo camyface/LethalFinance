@@ -16,11 +16,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/test")
-    public String test() {
-        return "User controller works";
-    }
-
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Users saveNewUser(@RequestBody Users users) {
