@@ -14,6 +14,8 @@ import AppLayout from "./components/AppLayout.jsx";
 import RetirementPlansPage from "./pages/RetirementPlansPage.jsx";
 import {TspPage} from "./pages/TspPage.jsx";
 import ProfileForm from "./lethalfinance/profile/ProfileForm.jsx";
+import EditProfilePage from "./pages/EditProfilePage.jsx";
+import ProfileSetupPage from "./pages/ProfileSetupPage.jsx";
 
 
 
@@ -30,15 +32,18 @@ const App = () => {
                 <Route path="/login"    element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
+                <Route path="/profile/setup" element={<ProfileSetupPage />} />
+
+
                 {/* Protected routes — wrapped in AppLayout */}
                 <Route element={<AppLayout />}>
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/budgets"   element={<BudgetsPage />} />
                     <Route path="/goals"     element={<GoalsPage />} />
                     <Route path="/profile"   element={<ProfilePage />} />
+                    <Route path="/editprofile"   element={<EditProfilePage/>} />
                     <Route path="/plans"   element={<RetirementPlansPage/>} />
                     <Route path="/tsp"   element={<TspPage/>} />
-                    <Route path="/editprofile"   element={<ProfileForm/>} />
                 </Route>
             </Routes>
 

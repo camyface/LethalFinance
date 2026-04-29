@@ -4,6 +4,7 @@ package com.example.backend.controller;
 import com.example.backend.entity.Users;
 import com.example.backend.service.UserService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,6 +23,12 @@ public class UserController {
         return userService.saveUser(users);
     }
 
+    @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.FOUND)
+    public ResponseEntity<Users> findUserById(@PathVariable Long id) {
+        Users user = userService.findUserById(id);
+        return ResponseEntity.ok(user);
+    }
 
 
 

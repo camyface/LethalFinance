@@ -1,50 +1,102 @@
-import {object, string} from "yup";
-import {yupResolver} from "@hookform/resolvers/yup";
-import {useForm} from "react-hook-form";
-import {Button, Col, Container, Form, Row} from "react-bootstrap";
+import { object, string } from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useForm } from "react-hook-form";
+import { Button, Col, Container, Form, Row, Alert } from "react-bootstrap";
+import { useNavigate, Link } from "react-router-dom";
+import { loginUser } from "../services/UserService.js";
+import { findProfileByUserId } from "../services/ProfileService.js";
 
 const LoginPage = () => {
 
-    const userSchema = object( {
-        firstName: string(),
+    const navigate = useNavigate();
 
-        lastName: string(),
-
-        email: string(),
-
-        password: string(),
-
-        role: string(),
-
-        createdAt: string(),
-
-        updatedAt: string()
+    const loginSchema = object({
+        email: string()
+            .email("Please enter a valid email")
+            .required("Email is required"),
+        password: string()
+            .required("Password is required"),
     });
 
     const {
         register,
         handleSubmit,
-        setValue,
-        reset,
-        formState: {errors},
+        setError,
+        formState: { errors, isSubmitting },
     } = useForm({
-        resolver: yupResolver(userSchema),
+        resolver: yupResolver(loginSchema),
         defaultValues: {
-
-        }
+            email: "",
+            password: "",
+        },
     });
 
-    const onSubmit = (data) => {
+    const onSubmit = async (data) => {
+        try {
+            // Login — returns { userId, profileComplete }
+            const { userId, profileComplete } = await loginUser({
+                email: data.email,
+                password: data.password,
+            });
 
-    }
+            if (profileComplete) {
+                navigate("/dashboard");
+            } else {
+                navigate("/profile/setup");
+            }
+        } catch (err) {
+            setError("root", { message: "Invalid email or password" });
+        }
+    };
 
-    return(
-        <>
-            <Container className="py-5">
+    return (
+        <div style={{
+            minHeight: "100vh",
+            background: "#3a4132",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+        }}>
+            <Container>
                 <Row className="justify-content-center">
-                    <Col md={10} lg={8}>
-                        <div className="reservation-card p-4 rounded-4 shadow-sm">
-                            <h1 className="mb-4 text-center">Login</h1>
+                    <Col md={10} lg={6}>
+
+                        {/* Logo */}
+                        <div className="text-center mb-4">
+                            <h1 style={{
+                                fontFamily: "'Bebas Neue', sans-serif",
+                                fontSize: "36px",
+                                letterSpacing: "4px",
+                                color: "#c8a84b",
+                                lineHeight: 1,
+                            }}>
+                                <span style={{ color: "#ffffff" }}>LETHAL</span> FINANCE
+                            </h1>
+                        </div>
+
+                        {/* Card */}
+                        <div style={{
+                            background: "#f5f2ea",
+                            border: "1px solid rgba(74,82,64,0.22)",
+                            borderRadius: "4px",
+                            padding: "28px",
+                        }}>
+                            <h2 style={{
+                                fontFamily: "'Bebas Neue', sans-serif",
+                                fontSize: "22px",
+                                letterSpacing: "2px",
+                                color: "#3a4132",
+                                marginBottom: "20px",
+                                textAlign: "center",
+                            }}>
+                                Login
+                            </h2>
+
+                            {errors.root && (
+                                <Alert variant="danger" style={{ fontSize: "13px" }}>
+                                    {errors.root.message}
+                                </Alert>
+                            )}
 
                             <Form onSubmit={handleSubmit(onSubmit)}>
                                 <Row className="g-3">
@@ -77,9 +129,31 @@ const LoginPage = () => {
                                     </Col>
 
                                     <Col md={12} className="d-flex gap-2 justify-content-center mt-3">
-                                        <Button type="submit" className="menu-button">
-                                            Submit
+                                        <Button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            style={{
+                                                fontFamily: "'Bebas Neue', sans-serif",
+                                                letterSpacing: "2px",
+                                                fontSize: "14px",
+                                                background: "#3a4132",
+                                                border: "none",
+                                                color: "#c8a84b",
+                                                padding: "8px 28px",
+                                                borderRadius: "3px",
+                                            }}
+                                        >
+                                            {isSubmitting ? "Logging in..." : "Login"}
                                         </Button>
+                                    </Col>
+
+                                    <Col md={12} className="text-center mt-2">
+                                        <span style={{ fontSize: "13px", color: "#6b6a60" }}>
+                                            Don't have an account?{" "}
+                                            <Link to="/register" style={{ color: "#9a7e30" }}>
+                                                Register
+                                            </Link>
+                                        </span>
                                     </Col>
                                 </Row>
                             </Form>
@@ -87,10 +161,8 @@ const LoginPage = () => {
                     </Col>
                 </Row>
             </Container>
-
-        </>
-
-    )
-}
+        </div>
+    );
+};
 
 export default LoginPage;

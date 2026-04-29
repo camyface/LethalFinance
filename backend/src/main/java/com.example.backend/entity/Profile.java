@@ -51,8 +51,8 @@ public class Profile {
     private String grade;
 
     @Column
-    @JsonProperty("target_retirement_age")
-    private double targetRetirementAge;
+    @JsonProperty("target_retirement_year")
+    private double targetRetirementYear;
 
     @Column
     @JsonProperty("marital_status")
@@ -190,12 +190,12 @@ public class Profile {
         this.grade = grade;
     }
 
-    public double getTargetRetirementAge() {
-        return targetRetirementAge;
+    public double getTargetRetirementYear() {
+        return targetRetirementYear;
     }
 
-    public void setTargetRetirementAge(double targetRetirementAge) {
-        this.targetRetirementAge = targetRetirementAge;
+    public void setTargetRetirementYear(double targetRetirementYear) {
+        this.targetRetirementYear = targetRetirementYear;
     }
 
     public String getMaritalStatus() {
