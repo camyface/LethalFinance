@@ -7,18 +7,14 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users")
 public class Users {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonProperty("firstName")
-    @Column
-    private String firstName;
-    @JsonProperty("lastName")
-    @Column
-    private String lastName;
     @Column
     private String email;
+
     @JsonProperty("password")
     @Column(name = "password_hash")
     private String password;
@@ -30,9 +26,7 @@ public class Users {
     private LocalDateTime updatedAt;
 
 
-    public Users(String first_name, String last_name, String email, String password_hash) {
-        this.firstName = first_name;
-        this.lastName = last_name;
+    public Users(String email, String password_hash) {
         this.email = email;
         this.password = password_hash;
         this.role = "USER";

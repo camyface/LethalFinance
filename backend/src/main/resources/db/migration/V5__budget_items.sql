@@ -1,12 +1,13 @@
-CREATE TABLE budgetItem (
-                            id SERIAL PRIMARY KEY UNIQUE NOT NULL,
-                            budgetId integer NOT NULL,
-                            name text,
-                            category text,
-                            planned_amount integer,
-                            actual_amount integer,
-                            is_recurring integer,
-                            notes text,
-                            created_at timestamp,
-                            updated_at timestamp
+CREATE TABLE budgetItem
+(
+    id             SERIAL PRIMARY KEY,
+    budget_id      INTEGER NOT NULL REFERENCES budget(id) ON DELETE CASCADE,
+    name           TEXT,
+    category       TEXT,
+    planned_amount NUMERIC(12, 2),
+    actual_amount  NUMERIC(12, 2),
+    is_recurring   BOOLEAN DEFAULT FALSE,
+    notes          TEXT,
+    created_at     TIMESTAMP,
+    updated_at     TIMESTAMP
 );

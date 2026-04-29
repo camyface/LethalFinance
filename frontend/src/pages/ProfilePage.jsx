@@ -1,13 +1,25 @@
 import Card from 'react-bootstrap/Card';
-import {CardHeader, Col, Container, Row} from "react-bootstrap";
+import {Button, CardHeader, Col, Container, Row} from "react-bootstrap";
+import {Link} from "react-router";
 
 
 const Profile = () => {
 
     return (
         <>
-            <h1>Profile Page</h1>
-            <Row >
+            <Row>
+                <Col md={10}>
+                    <h1>Profile Page</h1>
+                </Col>
+                <Col>
+                    <Button as={Link} to="/editprofile">Edit</Button>
+
+                </Col>
+
+            </Row>
+
+
+            <Row>
                 <Col>
                     <Card>
                         <CardHeader>First Name</CardHeader>

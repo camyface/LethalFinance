@@ -1,18 +1,18 @@
-CREATE TABLE profile (
-                         id SERIAL PRIMARY KEY UNIQUE NOT NULL,
-                         userId integer NOT NULL,
-                         branch_or_agency text,
-                         component text,
-                         grade text,
-                         years_of_service integer,
-                         current_age integer,
-                         target_retirement_age integer,
-                         annual_income integer,
-                         monthly_tsp_contribution integer,
-                         monthly_other_contribution integer,
-                         marital_status text,
-                         count_of_dependents integer,
-                         location text,
-                         created_at timestamp,
-                         updated_at timestamp
+CREATE TABLE profile
+(
+    id                        SERIAL PRIMARY KEY,
+    userId                    integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    first_name                TEXT    NOT NULL,
+    last_name                 TEXT    NOT NULL,
+    branch_or_agency          TEXT,
+    component                 TEXT,
+    grade                     TEXT,
+    basic_active_service_date DATE,
+    date_of_birth             DATE,
+    target_retirement_age     INTEGER,
+    marital_status            TEXT,
+    count_of_dependents       INTEGER,
+    location                  TEXT,
+    created_at                TIMESTAMP,
+    updated_at                TIMESTAMP
 );

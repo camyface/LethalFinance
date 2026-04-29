@@ -13,6 +13,7 @@ import {useState} from "react";
 import AppLayout from "./components/AppLayout.jsx";
 import RetirementPlansPage from "./pages/RetirementPlansPage.jsx";
 import {TspPage} from "./pages/TspPage.jsx";
+import ProfileForm from "./lethalfinance/profile/ProfileForm.jsx";
 
 
 
@@ -37,6 +38,7 @@ const App = () => {
                     <Route path="/profile"   element={<ProfilePage />} />
                     <Route path="/plans"   element={<RetirementPlansPage/>} />
                     <Route path="/tsp"   element={<TspPage/>} />
+                    <Route path="/editprofile"   element={<ProfileForm/>} />
                 </Route>
             </Routes>
 

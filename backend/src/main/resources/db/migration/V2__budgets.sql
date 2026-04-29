@@ -1,10 +1,11 @@
-CREATE TABLE budget (
-                        id SERIAL PRIMARY KEY UNIQUE NOT NULL,
-                        userId integer NOT NULL,
-                        title text,
-                        month text,
-                        year integer,
-                        notes text,
-                        created_at timestamp,
-                        updated_at timestamp
+CREATE TABLE budget
+(
+    id         SERIAL PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    title      TEXT,
+    month      INTEGER CHECK (month BETWEEN 1 AND 12),
+    year       INTEGER,
+    notes      TEXT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
