@@ -14,7 +14,7 @@ const EditProfilePage = () => {
     const [successMessage, setSuccessMessage] = useState(null);
 
     // TODO: replace hardcoded userId with value from session/context once auth is wired up
-    const userId = 1;
+    const userId = parseInt(sessionStorage.getItem('userId'));
 
     useEffect(() => {
         async function loadProfile() {

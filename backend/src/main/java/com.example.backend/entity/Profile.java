@@ -87,7 +87,7 @@ public class Profile {
 
     //Full args constructor
 
-    public Profile(Users users, String firstName, String lastName, LocalDate dateOfBirth, LocalDate basicActiveServiceDate, String branchOrAgency, String component, String grade, double targetRetirementAge, String maritalStatus, int countOfDependents, String location, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public Profile(Users users, String firstName, String lastName, LocalDate dateOfBirth, LocalDate basicActiveServiceDate, String branchOrAgency, String component, String grade, double targetRetirementYear, String maritalStatus, int countOfDependents, String location, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.users = users;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -96,7 +96,7 @@ public class Profile {
         this.branchOrAgency = branchOrAgency;
         this.component = component;
         this.grade = grade;
-        this.targetRetirementAge = targetRetirementAge;
+        this.targetRetirementYear = targetRetirementYear;
         this.maritalStatus = maritalStatus;
         this.countOfDependents = countOfDependents;
         this.location = location;

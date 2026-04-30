@@ -39,6 +39,9 @@ const LoginPage = () => {
                 password: data.password,
             });
 
+            //Store user Id to use later
+            sessionStorage.setItem('userId', userId);
+
             if (profileComplete) {
                 navigate("/dashboard");
             } else {

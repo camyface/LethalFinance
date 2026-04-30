@@ -14,7 +14,8 @@ const ProfileSetupPage = () => {
         setIsSubmitting(true);
         setError(null);
         try {
-            await saveProfile(data);
+            const userId = sessionStorage.getItem('userId');
+            await saveProfile({ ...data, userId: parseInt(userId) });
             navigate("/dashboard");
         } catch (err) {
             setError(err.message || "Failed to save profile. Please try again.");

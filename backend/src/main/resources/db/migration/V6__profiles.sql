@@ -1,7 +1,7 @@
 CREATE TABLE profile
 (
     id                        SERIAL PRIMARY KEY,
-    userId                    integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id                    integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     first_name                TEXT    NOT NULL,
     last_name                 TEXT    NOT NULL,
     branch_or_agency          TEXT,
@@ -9,7 +9,7 @@ CREATE TABLE profile
     grade                     TEXT,
     basic_active_service_date DATE,
     date_of_birth             DATE,
-    target_retirement_age     INTEGER,
+    target_retirement_year     INTEGER,
     marital_status            TEXT,
     count_of_dependents       INTEGER,
     location                  TEXT,
