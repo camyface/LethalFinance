@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
-    ComposedChart, Area, Bar, Line, XAxis, YAxis, CartesianGrid,
+    ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
     Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { Container, Row, Col, Form, Button, Table, Badge, Alert } from 'react-bootstrap';
+import { Row, Col } from 'react-bootstrap';
 import { buildProjection, buildChartData, getDisplayRows, fmtDollars, fmtFull, DEFAULT_INFLATION_PCT } from '../utils/tspCalculations.js';
 import { getMonthlyBasePay, ALL_RANKS } from '../utils/basePay.js';
+import { useRetirement } from '../context/RetirementContext.jsx';
 
 // ── Theme tokens ──────────────────────────────────────────────
 const T = {
@@ -22,6 +23,7 @@ const T = {
     green:    '#4a9962',
     blue:     '#4a7ab5',
     red:      '#b04040',
+    ink:      '#1a1c18',
 };
 
 // ── Sub-components ────────────────────────────────────────────
@@ -100,7 +102,6 @@ function MetricTile({ label, value, color }) {
     );
 }
 
-// Custom recharts tooltip
 function CustomTooltip({ active, payload, label }) {
     if (!active || !payload?.length) return null;
     return (
@@ -124,11 +125,10 @@ function CustomTooltip({ active, payload, label }) {
     );
 }
 
-// Phase badge
 const PHASE_BADGE = {
-    accumulation: { bg: '#d4eadb', color: T.success,  label: 'Contributing' },
-    deferred:     { bg: T.paper3,  color: T.muted,     label: 'Deferred Growth' },
-    withdrawal:   { bg: '#fceaea', color: T.red,        label: 'Withdrawing' },
+    accumulation: { bg: '#d4eadb', color: T.success, label: 'Contributing' },
+    deferred:     { bg: T.paper3,  color: T.muted,   label: 'Deferred Growth' },
+    withdrawal:   { bg: '#fceaea', color: T.red,      label: 'Withdrawing' },
 };
 
 // ── Promotion Timeline Modal ──────────────────────────────────
@@ -136,17 +136,15 @@ const PHASE_BADGE = {
 function PromotionTimelineModal({ timeline, onSave, onClose }) {
     const [entries, setEntries] = useState(timeline.map(e => ({ ...e })));
 
-    function addEntry() {
-        setEntries(prev => [...prev, { effectiveYear: new Date().getFullYear() + 2, rank: 'E-5' }]);
-    }
+    const add    = () => setEntries(p => [...p, { effectiveYear: new Date().getFullYear() + 2, rank: 'E-5' }]);
+    const remove = i => setEntries(p => p.filter((_, j) => j !== i));
+    const update = (i, f, v) => setEntries(p => p.map((e, j) => j === i ? { ...e, [f]: v } : e));
 
-    function removeEntry(idx) {
-        setEntries(prev => prev.filter((_, i) => i !== idx));
-    }
-
-    function updateEntry(idx, field, value) {
-        setEntries(prev => prev.map((e, i) => i === idx ? { ...e, [field]: value } : e));
-    }
+    const inputS = {
+        background: T.paper, border: `1px solid ${T.border}`,
+        borderRadius: 3, padding: '5px 8px',
+        fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, width: '100%',
+    };
 
     return (
         <div style={{
@@ -168,17 +166,14 @@ function PromotionTimelineModal({ timeline, onSave, onClose }) {
             }}>
                 <div style={{
                     fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: 17,
-                    letterSpacing: 2,
-                    color: T.oliveDim,
-                    marginBottom: 6,
-                    paddingBottom: 10,
-                    borderBottom: `1px solid ${T.border}`,
+                    fontSize: 17, letterSpacing: 2, color: T.oliveDim,
+                    marginBottom: 6, paddingBottom: 10, borderBottom: `1px solid ${T.border}`,
                 }}>
                     Promotion Timeline
                 </div>
                 <div style={{ fontSize: 11, color: T.muted, fontFamily: "'IBM Plex Mono', monospace", marginBottom: 14 }}>
                     Define expected promotions by year. Base pay will be recalculated automatically.
+                    {' '}Changes here are local to TSP — edit the active plan to persist.
                 </div>
 
                 {entries.length === 0 && (
@@ -189,68 +184,40 @@ function PromotionTimelineModal({ timeline, onSave, onClose }) {
 
                 {entries.map((entry, idx) => (
                     <div key={idx} style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr auto',
-                        gap: 10,
-                        alignItems: 'end',
-                        marginBottom: 10,
-                        padding: '10px 12px',
-                        background: '#fff',
-                        border: `1px solid ${T.border}`,
-                        borderRadius: 4,
+                        display: 'grid', gridTemplateColumns: '1fr 1fr auto',
+                        gap: 10, alignItems: 'end', marginBottom: 10,
+                        padding: '10px 12px', background: '#fff',
+                        border: `1px solid ${T.border}`, borderRadius: 4,
                     }}>
                         <div>
                             <FieldLabel>Effective Year</FieldLabel>
-                            <input
-                                type="number"
-                                value={entry.effectiveYear}
-                                onChange={e => updateEntry(idx, 'effectiveYear', parseInt(e.target.value))}
-                                style={{
-                                    background: T.paper, border: `1px solid ${T.border}`,
-                                    borderRadius: 3, padding: '5px 8px',
-                                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
-                                    width: '100%',
-                                }}
-                            />
+                            <input type="number" value={entry.effectiveYear}
+                                   onChange={e => update(idx, 'effectiveYear', parseInt(e.target.value))}
+                                   style={inputS} />
                         </div>
                         <div>
                             <FieldLabel>Rank</FieldLabel>
-                            <select
-                                value={entry.rank}
-                                onChange={e => updateEntry(idx, 'rank', e.target.value)}
-                                style={{
-                                    background: T.paper, border: `1px solid ${T.border}`,
-                                    borderRadius: 3, padding: '5px 8px',
-                                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
-                                    width: '100%',
-                                }}
-                            >
+                            <select value={entry.rank} onChange={e => update(idx, 'rank', e.target.value)} style={inputS}>
                                 {ALL_RANKS.map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
                         </div>
-                        <button
-                            onClick={() => removeEntry(idx)}
-                            style={{
-                                background: 'transparent', border: `1px solid #d4a0a0`,
-                                color: T.red, borderRadius: 3, padding: '5px 10px',
-                                cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif",
-                                letterSpacing: 1, fontSize: 11,
-                            }}
-                        >
+                        <button onClick={() => remove(idx)} style={{
+                            background: 'transparent', border: '1px solid #d4a0a0',
+                            color: T.red, borderRadius: 3, padding: '5px 10px',
+                            cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif",
+                            letterSpacing: 1, fontSize: 11,
+                        }}>
                             Remove
                         </button>
                     </div>
                 ))}
 
-                <button
-                    onClick={addEntry}
-                    style={{
-                        background: 'transparent', border: `1px solid ${T.border}`,
-                        color: T.olive, borderRadius: 3, padding: '6px 14px',
-                        cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif",
-                        letterSpacing: 1, fontSize: 12, marginBottom: 14,
-                    }}
-                >
+                <button onClick={add} style={{
+                    background: 'transparent', border: `1px solid ${T.border}`,
+                    color: T.olive, borderRadius: 3, padding: '6px 14px',
+                    cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif",
+                    letterSpacing: 1, fontSize: 12, marginBottom: 14,
+                }}>
                     + Add Entry
                 </button>
 
@@ -279,14 +246,14 @@ function PromotionTimelineModal({ timeline, onSave, onClose }) {
 
 // ── TSP Fund presets ──────────────────────────────────────────
 const FUND_PRESETS = [
-    { label: 'C Fund (S&P 500)',     value: 7.0 },
-    { label: 'S Fund (Small Cap)',   value: 6.5 },
-    { label: 'I Fund (Intl)',        value: 5.5 },
-    { label: 'G Fund (Gov Bonds)',   value: 3.5 },
-    { label: 'F Fund (Bond Index)',  value: 4.0 },
-    { label: 'L 2045',              value: 6.8 },
-    { label: 'L 2050',              value: 7.0 },
-    { label: 'Custom',              value: null },
+    { label: 'C Fund (S&P 500)',    value: 7.0 },
+    { label: 'S Fund (Small Cap)',  value: 6.5 },
+    { label: 'I Fund (Intl)',       value: 5.5 },
+    { label: 'G Fund (Gov Bonds)',  value: 3.5 },
+    { label: 'F Fund (Bond Index)', value: 4.0 },
+    { label: 'L 2045',             value: 6.8 },
+    { label: 'L 2050',             value: 7.0 },
+    { label: 'Custom',             value: null },
 ];
 
 // ── Main TspPage ──────────────────────────────────────────────
@@ -295,29 +262,57 @@ export const TspPage = () => {
 
     const currentYear = new Date().getFullYear();
 
-    // ── Input state ─────────────────────────────────────────────
-    const [rank,               setRank]               = useState('E-5');
-    const [currentYOS,         setCurrentYOS]         = useState(8);
-    const [currentAge,         setCurrentAge]         = useState(26);
+    // ── Pull defaults from active retirement plan ─────────────
+    const { activePlan, activeTimeline } = useRetirement();
+
+    // ── Input state — seeded from active plan on mount ────────
+    const [rank,               setRank]               = useState(activePlan?.currentRank    ?? 'E-5');
+    const [currentYOS,         setCurrentYOS]         = useState(activePlan?.currentYOS     ?? 8);
+    const [currentAge,         setCurrentAge]         = useState(activePlan?.currentAge     ?? 26);
     const [currentBalance,     setCurrentBalance]     = useState(48000);
     const [memberContribPct,   setMemberContribPct]   = useState(5);
     const [fundPreset,         setFundPreset]         = useState('C Fund (S&P 500)');
     const [expectedReturn,     setExpectedReturn]     = useState(7.0);
-    const [separationYear,     setSeparationYear]     = useState(currentYear + 12);
+    const [separationYear,     setSeparationYear]     = useState(activePlan?.separationYear ?? currentYear + 12);
     const [withdrawalStartAge, setWithdrawalStartAge] = useState(59.5);
     const [useRule55,          setUseRule55]           = useState(false);
     const [withdrawalRate,     setWithdrawalRate]     = useState(4.0);
-    const [deathAge,           setDeathAge]           = useState(85);
-    const [promotionTimeline,  setPromotionTimeline]  = useState([]);
+    const [deathAge,           setDeathAge]           = useState(activePlan?.deathAge       ?? 85);
+    const [inflationPct,       setInflationPct]       = useState(activePlan?.inflationPct   ?? DEFAULT_INFLATION_PCT);
+    const [promotionTimeline,  setPromotionTimeline]  = useState(activeTimeline);
     const [showTimelineModal,  setShowTimelineModal]  = useState(false);
     const [showFullTable,      setShowFullTable]      = useState(false);
-    const [showPV,            setShowPV]            = useState(false);
-    const [inflationPct,      setInflationPct]      = useState(DEFAULT_INFLATION_PCT);
+    const [showPV,             setShowPV]             = useState(false);
 
-    // ── Derived values ──────────────────────────────────────────
-    const monthlyBasePay   = getMonthlyBasePay(rank, currentYOS);
-    const memberMonthly    = monthlyBasePay * (memberContribPct / 100);
-    const govMonthly       = (() => {
+    // ── Sync inputs when active plan changes ──────────────────
+    // Dependency on activePlan?.id means this only fires when the
+    // user switches to a different plan, not on every field edit.
+    useEffect(() => {
+        if (!activePlan) return;
+        setRank(activePlan.currentRank);
+        setCurrentYOS(activePlan.currentYOS);
+        setCurrentAge(activePlan.currentAge);
+        setSeparationYear(activePlan.separationYear);
+        setInflationPct(activePlan.inflationPct);
+        setDeathAge(activePlan.deathAge);
+    }, [activePlan?.id]);
+
+    // ── Keep local promotion timeline in sync with active plan ─
+    // When the user edits the timeline on the retirement plans page,
+    // the TSP page picks it up automatically.
+    useEffect(() => {
+        setPromotionTimeline(activeTimeline);
+    }, [activeTimeline]);
+
+    // ── Active plan banner ────────────────────────────────────
+    const planBanner = activePlan
+        ? `Seeded from active plan: ${activePlan.name} · ${activePlan.retirementSystem}`
+        : null;
+
+    // ── Derived values ────────────────────────────────────────
+    const monthlyBasePay = getMonthlyBasePay(rank, currentYOS);
+    const memberMonthly  = monthlyBasePay * (memberContribPct / 100);
+    const govMonthly     = (() => {
         const auto = monthlyBasePay * 0.01;
         const pct  = memberContribPct / 100;
         let match  = 0;
@@ -329,20 +324,19 @@ export const TspPage = () => {
         return auto + match;
     })();
 
-    // Rule of 55 eligibility check
-    const separationAge    = currentAge + (separationYear - currentYear);
-    const rule55Eligible   = separationAge >= 55;
+    const separationAge          = currentAge + (separationYear - currentYear);
+    const rule55Eligible         = separationAge >= 55;
     const effectiveWithdrawalAge = useRule55 && rule55Eligible ? 55 : withdrawalStartAge;
 
-    // ── Projection ───────────────────────────────────────────────
+    // ── Projection ────────────────────────────────────────────
     const projectionRows = useMemo(() => buildProjection({
         currentYear,
         currentAge,
         currentYOS,
-        currentRank:       rank,
-        currentTspBalance: currentBalance,
+        currentRank:        rank,
+        currentTspBalance:  currentBalance,
         memberContribPct,
-        expectedReturnPct: expectedReturn,
+        expectedReturnPct:  expectedReturn,
         separationYear,
         withdrawalStartAge: effectiveWithdrawalAge,
         withdrawalRatePct:  withdrawalRate,
@@ -355,16 +349,15 @@ export const TspPage = () => {
         effectiveWithdrawalAge, withdrawalRate, deathAge, promotionTimeline, inflationPct,
     ]);
 
-    const chartData = useMemo(() => buildChartData(projectionRows, showPV), [projectionRows, showPV]);
-    const displayRows = useMemo(() => getDisplayRows(projectionRows, showPV), [projectionRows, showPV]);
+    const chartData   = useMemo(() => buildChartData(projectionRows, showPV),    [projectionRows, showPV]);
+    const displayRows = useMemo(() => getDisplayRows(projectionRows, showPV),     [projectionRows, showPV]);
 
-    // Key milestones
-    const separationRow    = displayRows.find(r => r.year === separationYear);
-    const withdrawalRow    = displayRows.find(r => r.age >= effectiveWithdrawalAge);
-    const peakRow          = displayRows.reduce((a, b) => b.tspBalance > a.tspBalance ? b : a, displayRows[0] || {});
-    const tableRows        = showFullTable ? displayRows : displayRows.slice(0, 15);
+    const separationRow = displayRows.find(r => r.year === separationYear);
+    const withdrawalRow = displayRows.find(r => r.age >= effectiveWithdrawalAge);
+    const peakRow       = displayRows.reduce((a, b) => b.tspBalance > a.tspBalance ? b : a, displayRows[0] || {});
+    const tableRows     = showFullTable ? displayRows : displayRows.slice(0, 15);
 
-    // ── Handlers ────────────────────────────────────────────────
+    // ── Handlers ──────────────────────────────────────────────
     function handleFundPreset(label) {
         setFundPreset(label);
         const preset = FUND_PRESETS.find(f => f.label === label);
@@ -375,10 +368,10 @@ export const TspPage = () => {
         background: T.paper, border: `1px solid ${T.border}`,
         borderRadius: 3, padding: '6px 9px',
         fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
-        color: '#1a1c18', width: '100%', outline: 'none',
+        color: T.ink, width: '100%', outline: 'none',
     };
 
-    // ── Render ───────────────────────────────────────────────────
+    // ── Render ────────────────────────────────────────────────
     return (
         <div style={{ padding: '18px 22px', background: T.paper, minHeight: '100vh' }}>
 
@@ -391,7 +384,7 @@ export const TspPage = () => {
             )}
 
             {/* Page header */}
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: planBanner ? 8 : 20 }}>
                 <h1 style={{
                     fontFamily: "'Bebas Neue', sans-serif", fontSize: 22,
                     letterSpacing: 2, color: T.oliveDim, marginBottom: 2,
@@ -406,8 +399,22 @@ export const TspPage = () => {
                 </p>
             </div>
 
+            {/* Active plan banner */}
+            {planBanner && (
+                <div style={{
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+                    color: T.success, background: '#eaf3de',
+                    border: `1px solid #b2d6a0`, borderRadius: 3,
+                    padding: '6px 12px', marginBottom: 16,
+                    display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                    <span>◈</span>
+                    <span>{planBanner} · Inputs seeded automatically. Override any field below.</span>
+                </div>
+            )}
+
             <Row>
-                {/* ── LEFT COLUMN: Inputs ─────────────────────────────── */}
+                {/* ── LEFT COLUMN: Inputs ───────────────────────────── */}
                 <Col md={4}>
 
                     <SectionCard title="Service Info">
@@ -449,17 +456,17 @@ export const TspPage = () => {
                             </div>
                         </div>
 
-                        {/* Live calculation display */}
+                        {/* Live calculation panel */}
                         <div style={{
                             background: T.paper2, borderRadius: 3, padding: '10px 12px',
                             border: `1px solid ${T.border}`, marginTop: 8,
                         }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                                 {[
-                                    { label: 'Base Pay', val: fmtFull(monthlyBasePay) + '/mo' },
-                                    { label: 'Your Contribution', val: fmtFull(memberMonthly) + '/mo' },
-                                    { label: 'Gov Match', val: fmtFull(govMonthly) + '/mo' },
-                                    { label: 'Total Monthly', val: fmtFull(memberMonthly + govMonthly) + '/mo' },
+                                    { label: 'Base Pay',         val: fmtFull(monthlyBasePay) + '/mo' },
+                                    { label: 'Your Contribution', val: fmtFull(memberMonthly)  + '/mo' },
+                                    { label: 'Gov Match',         val: fmtFull(govMonthly)     + '/mo' },
+                                    { label: 'Total Monthly',     val: fmtFull(memberMonthly + govMonthly) + '/mo' },
                                 ].map(({ label, val }) => (
                                     <div key={label}>
                                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: T.muted, letterSpacing: 1, textTransform: 'uppercase' }}>{label}</div>
@@ -475,6 +482,7 @@ export const TspPage = () => {
                     </SectionCard>
 
                     <SectionCard title="Growth & Withdrawal">
+
                         <div style={{ marginBottom: 10 }}>
                             <FieldLabel>Fund / Expected Return</FieldLabel>
                             <select value={fundPreset} onChange={e => handleFundPreset(e.target.value)} style={inputStyle}>
@@ -495,7 +503,7 @@ export const TspPage = () => {
                             <input type="number" value={separationYear} min={currentYear} max={currentYear + 50}
                                    onChange={e => setSeparationYear(parseInt(e.target.value) || currentYear + 12)} style={inputStyle} />
                             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.muted, marginTop: 3 }}>
-                                Age at separation: {separationAge}
+                                Age at separation: {separationAge} · YOS at separation: {currentYOS + (separationYear - currentYear)}
                             </div>
                         </div>
 
@@ -504,7 +512,7 @@ export const TspPage = () => {
                             <input type="number" value={withdrawalStartAge} min={55} max={75} step={0.5}
                                    onChange={e => setWithdrawalStartAge(parseFloat(e.target.value) || 59.5)} style={inputStyle} />
 
-                            {/* Rule of 55 toggle */}
+                            {/* Rule of 55 */}
                             <div style={{
                                 marginTop: 8, padding: '8px 10px',
                                 background: rule55Eligible ? T.paper2 : '#f8f8f6',
@@ -522,7 +530,8 @@ export const TspPage = () => {
                                     />
                                     <label htmlFor="rule55" style={{
                                         fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-                                        color: rule55Eligible ? T.ink : T.muted, cursor: rule55Eligible ? 'pointer' : 'default',
+                                        color: rule55Eligible ? T.ink : T.muted,
+                                        cursor: rule55Eligible ? 'pointer' : 'default',
                                     }}>
                                         Apply Rule of 55 (penalty-free at separation)
                                     </label>
@@ -555,13 +564,13 @@ export const TspPage = () => {
                             </div>
                         </div>
 
-                        <div>
+                        <div style={{ marginBottom: 10 }}>
                             <FieldLabel>Life Expectancy (Death Age)</FieldLabel>
                             <input type="number" value={deathAge} min={60} max={110}
                                    onChange={e => setDeathAge(parseInt(e.target.value) || 85)} style={inputStyle} />
                         </div>
 
-                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                        <div style={{ paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
                             <FieldLabel>Assumed Inflation Rate %</FieldLabel>
                             <input type="number" value={inflationPct} step={0.1} min={0} max={10}
                                    onChange={e => setInflationPct(parseFloat(e.target.value) || 2.5)} style={inputStyle} />
@@ -574,23 +583,21 @@ export const TspPage = () => {
 
                 </Col>
 
-                {/* ── RIGHT COLUMN: Results ────────────────────────────── */}
+                {/* ── RIGHT COLUMN: Results ─────────────────────────── */}
                 <Col md={8}>
 
-                    {/* Key metrics */}
+                    {/* Key metric tiles */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 16 }}>
-                        <MetricTile label="Balance at Separation"  value={fmtDollars(separationRow?.tspBalance ?? 0)} />
-                        <MetricTile label="Peak Balance"           value={fmtDollars(peakRow?.tspBalance ?? 0)} color={T.goldDim} />
-                        <MetricTile label="Annual Withdrawal"      value={fmtDollars(withdrawalRow?.annualWithdrawal ?? 0)} color={T.green} />
-                        <MetricTile label="Balance at Death Age"   value={fmtDollars(displayRows[displayRows.length - 1]?.tspBalance ?? 0)} />
+                        <MetricTile label="Balance at Separation" value={fmtDollars(separationRow?.tspBalance ?? 0)} />
+                        <MetricTile label="Peak Balance"          value={fmtDollars(peakRow?.tspBalance ?? 0)} color={T.goldDim} />
+                        <MetricTile label="Annual Withdrawal"     value={fmtDollars(withdrawalRow?.annualWithdrawal ?? 0)} color={T.green} />
+                        <MetricTile label="Balance at Death Age"  value={fmtDollars(displayRows[displayRows.length - 1]?.tspBalance ?? 0)} />
                     </div>
 
-                    {/* Chart */}
                     {/* PV / FV toggle */}
                     <div style={{
                         display: 'flex', alignItems: 'center', gap: 6,
-                        marginBottom: 12,
-                        padding: '8px 12px',
+                        marginBottom: 12, padding: '8px 12px',
                         background: showPV ? '#eef4fb' : T.paper2,
                         border: `1px solid ${showPV ? '#4a7ab5' : T.border}`,
                         borderRadius: 4,
@@ -598,47 +605,41 @@ export const TspPage = () => {
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
               Dollar Display:
             </span>
-                        <button
-                            onClick={() => setShowPV(false)}
-                            style={{
-                                fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1.5, fontSize: 12,
-                                padding: '4px 14px', borderRadius: 3, cursor: 'pointer', border: 'none',
-                                background: !showPV ? T.oliveDim : 'transparent',
-                                color: !showPV ? T.gold : T.muted,
-                                transition: 'all 0.15s',
-                            }}
-                        >
+                        <button onClick={() => setShowPV(false)} style={{
+                            fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1.5, fontSize: 12,
+                            padding: '4px 14px', borderRadius: 3, cursor: 'pointer', border: 'none',
+                            background: !showPV ? T.oliveDim : 'transparent',
+                            color: !showPV ? T.gold : T.muted,
+                            transition: 'all 0.15s',
+                        }}>
                             Future Value
                         </button>
-                        <button
-                            onClick={() => setShowPV(true)}
-                            style={{
-                                fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1.5, fontSize: 12,
-                                padding: '4px 14px', borderRadius: 3, cursor: 'pointer', border: 'none',
-                                background: showPV ? '#4a7ab5' : 'transparent',
-                                color: showPV ? '#ffffff' : T.muted,
-                                transition: 'all 0.15s',
-                            }}
-                        >
+                        <button onClick={() => setShowPV(true)} style={{
+                            fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1.5, fontSize: 12,
+                            padding: '4px 14px', borderRadius: 3, cursor: 'pointer', border: 'none',
+                            background: showPV ? '#4a7ab5' : 'transparent',
+                            color: showPV ? '#ffffff' : T.muted,
+                            transition: 'all 0.15s',
+                        }}>
                             Present Value
                         </button>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: T.muted, marginLeft: 4 }}>
-              {showPV ? `Discounted at ${inflationPct}% inflation · ${new Date().getFullYear()} dollars` : 'Nominal future dollars'}
+              {showPV
+                  ? `Discounted at ${inflationPct}% inflation · ${new Date().getFullYear()} dollars`
+                  : 'Nominal future dollars'}
             </span>
                     </div>
 
+                    {/* Chart */}
                     <SectionCard
                         title="TSP Balance Projection"
                         action={
-                            <button
-                                onClick={() => setShowTimelineModal(true)}
-                                style={{
-                                    background: 'transparent', border: `1px solid ${T.border}`,
-                                    color: T.olive, borderRadius: 3, padding: '3px 10px',
-                                    cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif",
-                                    letterSpacing: 1, fontSize: 11,
-                                }}
-                            >
+                            <button onClick={() => setShowTimelineModal(true)} style={{
+                                background: 'transparent', border: `1px solid ${T.border}`,
+                                color: T.olive, borderRadius: 3, padding: '3px 10px',
+                                cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif",
+                                letterSpacing: 1, fontSize: 11,
+                            }}>
                                 Edit Promotion Timeline ({promotionTimeline.length})
                             </button>
                         }
@@ -658,11 +659,8 @@ export const TspPage = () => {
                                     axisLine={false}
                                 />
                                 <Tooltip content={<CustomTooltip />} />
-                                <Legend
-                                    wrapperStyle={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10 }}
-                                />
+                                <Legend wrapperStyle={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10 }} />
 
-                                {/* Reference lines for phase transitions */}
                                 <ReferenceLine
                                     x={separationYear}
                                     stroke={T.gold}
@@ -678,31 +676,11 @@ export const TspPage = () => {
                                     />
                                 )}
 
-                                {/* Stacked bars: member + gov contributions */}
                                 <Bar dataKey="memberContrib" name="Member Contribution" stackId="contrib" fill={T.olive} opacity={0.8} />
                                 <Bar dataKey="govContrib"    name="Gov Match"           stackId="contrib" fill={T.gold}  opacity={0.8} />
 
-                                {/* TSP balance line */}
-                                <Line
-                                    type="monotone"
-                                    dataKey="balance"
-                                    name="TSP Balance"
-                                    stroke={T.blue}
-                                    strokeWidth={2.5}
-                                    dot={false}
-                                    yAxisId={0}
-                                />
-
-                                {/* Withdrawal line */}
-                                <Line
-                                    type="monotone"
-                                    dataKey="withdrawal"
-                                    name="Annual Withdrawal"
-                                    stroke={T.red}
-                                    strokeWidth={1.5}
-                                    dot={false}
-                                    strokeDasharray="4 2"
-                                />
+                                <Line type="monotone" dataKey="balance"    name="TSP Balance"       stroke={T.blue} strokeWidth={2.5} dot={false} />
+                                <Line type="monotone" dataKey="withdrawal" name="Annual Withdrawal"  stroke={T.red}  strokeWidth={1.5} dot={false} strokeDasharray="4 2" />
                             </ComposedChart>
                         </ResponsiveContainer>
 
@@ -748,9 +726,12 @@ export const TspPage = () => {
                                         <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace" }}>{row.year}</td>
                                         <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace" }}>{row.age}</td>
                                         <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace" }}>{row.yos}</td>
-                                        <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace', fontWeight: 500" }}>{row.rank}</td>
+                                        <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace", fontWeight: 500 }}>{row.rank}</td>
                                         <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace" }}>{fmtFull(row.annualBasePay)}</td>
-                                        <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace", color: T.olive }}>{fmtFull(row.annualMemberContrib)}</td>
+                                        <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace", color: T.olive }}>
+                                            {fmtFull(row.annualMemberContrib)}
+                                            {row.memberCapped && <span title="IRS limit applied" style={{ color: T.gold, marginLeft: 4 }}>⚠</span>}
+                                        </td>
                                         <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace", color: T.goldDim }}>{fmtFull(row.annualGovContrib)}</td>
                                         <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{fmtDollars(row.tspBalance)}</td>
                                         <td style={{ padding: '6px 8px', fontFamily: "'IBM Plex Mono', monospace", color: row.annualWithdrawal > 0 ? T.red : T.muted }}>
@@ -776,15 +757,12 @@ export const TspPage = () => {
 
                         {projectionRows.length > 15 && (
                             <div style={{ textAlign: 'center', marginTop: 12 }}>
-                                <button
-                                    onClick={() => setShowFullTable(t => !t)}
-                                    style={{
-                                        background: 'transparent', border: `1px solid ${T.border}`,
-                                        color: T.olive, borderRadius: 3, padding: '6px 16px',
-                                        cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif",
-                                        letterSpacing: 1, fontSize: 12,
-                                    }}
-                                >
+                                <button onClick={() => setShowFullTable(t => !t)} style={{
+                                    background: 'transparent', border: `1px solid ${T.border}`,
+                                    color: T.olive, borderRadius: 3, padding: '6px 16px',
+                                    cursor: 'pointer', fontFamily: "'Bebas Neue', sans-serif",
+                                    letterSpacing: 1, fontSize: 12,
+                                }}>
                                     {showFullTable ? 'Show Less' : `Show All ${projectionRows.length} Years`}
                                 </button>
                             </div>
